@@ -1,8 +1,15 @@
-# 3x-ui v2.9.4 on Railway
+# xui v2.9.4 on Railway
 
-Panel: /managepanel/
-User: admin
-Pass: 2053
-Sub: /sub/
+پنل xui نسخه 2.9.4
 
-Auto setup - no manual config needed.
+### مشخصات
+- Username: 2053
+- Password: 2053
+- Port: 8080
+- Panel: / 
+- Sub: /sub/
+
+### لینک پنل
+https://xui-production-94c3.up.railway.app
+
+Deploy on Railway with Docker + Nginx
