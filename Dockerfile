@@ -1,23 +1,18 @@
-FROM alpine:3.21
+FROM alpine:3.19
 
 RUN apk add --no-cache \
     curl \
     bash \
     ca-certificates \
-    socat \
     tzdata \
     sqlite \
     nginx \
     gettext \
-    libgcc \
-    && ln -sf /usr/share/zoneinfo/Asia/Tehran /etc/localtime \
-    && mkdir -p /etc/x-ui /var/log/x-ui /usr/local/x-ui /var/log/nginx /var/run
+    && ln -sf /usr/share/zoneinfo/Asia/Tehran /etc/localtime
 
-ARG VERSION=2.9.4
-RUN curl -Ls https://github.com/MHSanaei/3x-ui/releases/download/v${VERSION}/x-ui-linux-amd64.tar.gz -o /tmp/x-ui.tar.gz \
-    && tar -xzf /tmp/x-ui.tar.gz -C /tmp/ \
-    && mv /tmp/x-ui/x-ui /usr/local/x-ui/x-ui \
-    && rm -rf /tmp/x-ui.tar.gz /tmp/x-ui \
+RUN curl -L https://github.com/MHSanaei/3x-ui/releases/download/v2.9.4/x-ui-linux-amd64.tar.gz -o /tmp/x-ui.tar.gz \
+    && tar -xzf /tmp/x-ui.tar.gz -C /usr/local/ \
+    && rm /tmp/x-ui.tar.gz \
     && chmod +x /usr/local/x-ui/x-ui
 
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
