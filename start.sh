@@ -1,25 +1,35 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Starting X-UI + nginx reverse proxy..."
+export PORT=${PORT:-8080}
+export XUI_PORT=2053
+DB="/etc/x-ui/x-ui.db"
 
-# nginx همیشه روی پورت ثابت 3000 گوش می‌دهد
-export NGINX_PORT=3000
+envsubst '${PORT} ${XUI_PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
-cd /usr/local/x-ui
+/usr/local/x-ui/x-ui > /var/log/x-ui/x-ui.log 2>&1 &
+sleep 5
 
-echo "🔧 Applying panel settings via x-ui CLI..."
-./x-ui setting -port 2053 -webBasePath /managepanel/ || true
+# یوزر 2053 / پسورد 2053
+/usr/local/x-ui/x-ui setting -username 2053 -password 2053 > /dev/null 2>&1 || true
+/usr/local/x-ui/x-ui setting -port $XUI_PORT > /dev/null 2>&1 || true
 
-echo "🔧 Building nginx.conf for fixed port: $NGINX_PORT"
-envsubst '${NGINX_PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+# فیکس اتوماتیک لینک ساب
+DOMAIN=$(echo $RAILWAY_PUBLIC_DOMAIN | sed 's|https://||' | sed 's|http://||')
+if [ -z "$DOMAIN" ]; then
+  DOMAIN=$(echo $RAILWAY_STATIC_URL | sed 's|https://||')
+fi
 
-echo "▶️  Starting x-ui in background..."
-./x-ui &
-X_UI_PID=$!
+if [ ! -z "$DOMAIN" ]; then
+  echo "Fixing sub for domain: $DOMAIN"
+  sqlite3 $DB "UPDATE settings SET value='$DOMAIN' WHERE key='subDomain';" 2>/dev/null || true
+  sqlite3 $DB "UPDATE settings SET value='443' WHERE key='subPort';" 2>/dev/null || true
+  sqlite3 $DB "UPDATE settings SET value='' WHERE key='subPath';" 2>/dev/null || true
+fi
 
+pkill x-ui || true
 sleep 2
+/usr/local/x-ui/x-ui > /var/log/x-ui/x-ui.log 2>&1 &
 
-echo "▶️  Starting nginx in foreground on port $NGINX_PORT..."
-nginx -t
-exec nginx -g "daemon off;"
+echo "=== READY v2.9.4 === Login: 2053 / 2053 | Domain: $DOMAIN"
+nginx -g "daemon off;"
