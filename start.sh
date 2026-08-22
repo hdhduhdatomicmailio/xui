@@ -1,35 +1,12 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-export PORT=${PORT:-8080}
-cd /usr/local/x-ui
-mkdir -p /etc/x-ui /var/log
+/usr/local/x-ui/x-ui setting -username 2053 -password 2053 -port 8080 -webBasePath /
 
-echo "=== v2.9.4 Auto Setup ==="
-echo "Panel: 2053 | User: admin | Pass: 2053"
+# تغییر نام 3x-ui به xui
+find /usr/local/x-ui -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" \) -exec sed -i 's/3x-ui/xui/gI; s/3X-UI/xui/gI; s/3X-ui/xui/gI' {} + 2>/dev/null || true
 
-# تنظیمات پنل بدون دخالت دست
-./x-ui setting -port 2053 || true
-./x-ui setting -webBasePath /managepanel/ || true
-./x-ui setting -username admin || true
-./x-ui setting -password 2053 || true
-./x-ui setting -subPort 2053 || true
-./x-ui setting -subPath /sub/ || true
+envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
 
-# ساخت nginx.conf با پورت Railway
-envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
-
-echo "Starting x-ui on 2053..."
-./x-ui > /var/log/x-ui.log 2>&1 &
-sleep 4
-
-# فعالسازی اتوماتیک ساب برای همه اینباندهای قبلی
-if [ -f /etc/x-ui/x-ui.db ]; then
-  echo "Enabling sub for all inbounds..."
-  sqlite3 /etc/x-ui/x-ui.db "UPDATE inbounds SET sub=1;" 2>/dev/null || true
-  sqlite3 /etc/x-ui/x-ui.db "UPDATE settings SET value='true' WHERE key='subEnable';" 2>/dev/null || true
-fi
-
-echo "Starting nginx on $PORT -> 2053"
-nginx -t
-exec nginx -g "daemon off;"
+nginx
+exec /usr/local/x-ui/x-ui
